@@ -206,6 +206,11 @@ export default function HomePage() {
               Checks title, meta, canonicals, H1, images, schema, viewport & more.
             </p>
           )}
+
+          {/* Waitlist inline — shown below audit bar when no results */}
+          {!result && !loading && (
+            <WaitlistInline />
+          )}
         </div>
       </section>
 
@@ -367,6 +372,107 @@ export default function HomePage() {
       )}
 
       <Footer />
+    </div>
+  );
+}
+
+
+/**
+ * WaitlistInline
+ * Email capture shown below the hero search bar.
+ * Submits to Web3Forms — no backend needed.
+ * Replace YOUR_WEB3FORMS_KEY with your key from web3forms.com/dashboard.
+ */
+function WaitlistInline() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [errorMsg, setErrorMsg] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setStatus('loading');
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_key: '0e657581-2f78-495f-8adb-452c1c2bce9b',
+          subject: 'SEOFix — New early access request',
+          from_name: 'SEOFix Waitlist',
+          email: email.trim(),
+          message: `New early access signup: ${email.trim()}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setStatus('success');
+      } else {
+        setStatus('error');
+        setErrorMsg('Something went wrong. Please try again.');
+      }
+    } catch {
+      setStatus('error');
+      setErrorMsg('Network error. Please check your connection.');
+    }
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: '40px',
+        padding: '28px 32px',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '12px',
+        textAlign: 'center',
+      }}
+    >
+      <div className="text-label" style={{ marginBottom: '8px' }}>Early access</div>
+      <div className="text-h3" style={{ marginBottom: '6px', color: 'var(--white)' }}>
+        Launching soon — get notified first
+      </div>
+      <div className="text-sm" style={{ marginBottom: '20px', maxWidth: '400px', margin: '0 auto 20px' }}>
+        Leave your email and we will reach out when early access opens, including a founding discount.
+      </div>
+
+      {status === 'success' ? (
+        <div className="alert alert-success" style={{ maxWidth: '400px', margin: '0 auto', justifyContent: 'center' }}>
+          You are on the list. We will be in touch soon.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ maxWidth: '400px', margin: '0 auto' }}>
+          <div className="search-bar">
+            <input
+              className="input"
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              disabled={status === 'loading'}
+            />
+            <button
+              type="submit"
+              className={`btn btn-primary btn-md ${status === 'loading' ? 'btn-loading' : ''}`}
+              disabled={status === 'loading' || !email.trim()}
+              style={{ margin: '6px', flexShrink: 0 }}
+            >
+              {status === 'loading' ? '' : 'Join the waitlist'}
+            </button>
+          </div>
+          {status === 'error' && (
+            <div className="alert alert-error" style={{ marginTop: '10px' }}>{errorMsg}</div>
+          )}
+          <div className="text-mono" style={{ marginTop: '10px' }}>
+            No spam. Unsubscribe any time.
+          </div>
+        </form>
+      )}
     </div>
   );
 }
