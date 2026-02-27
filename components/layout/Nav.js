@@ -18,13 +18,13 @@ export default function Nav() {
 
           <div className="nav-links">
             <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
-              Audit
+              Free audit
+            </Link>
+            <Link href="/crawl" className={`nav-link ${pathname === '/crawl' ? 'active' : ''}`}>
+              Full site crawl
             </Link>
             <Link href="/pricing" className={`nav-link ${pathname === '/pricing' ? 'active' : ''}`}>
               Pricing
-            </Link>
-            <Link href="/how-it-works" className={`nav-link ${pathname === '/how-it-works' ? 'active' : ''}`}>
-              How it works
             </Link>
           </div>
 
@@ -33,7 +33,7 @@ export default function Nav() {
               className="btn btn-primary btn-sm"
               onClick={() => setModalOpen(true)}
             >
-              Join the waitlist
+              Get early access
             </button>
           </div>
         </div>
@@ -70,7 +70,7 @@ function WaitlistModal({ onClose }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          access_key: '0e657581-2f78-495f-8adb-452c1c2bce9b',
+          access_key: 'YOUR_WEB3FORMS_KEY',
           subject: 'SEOFix — New early access request',
           from_name: 'SEOFix Waitlist',
           email: email.trim(),
