@@ -33,7 +33,7 @@ export default function Nav() {
               className="btn btn-primary btn-sm"
               onClick={() => setModalOpen(true)}
             >
-              Get early access
+              Join the waitlist
             </button>
           </div>
         </div>
