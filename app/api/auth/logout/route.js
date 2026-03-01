@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { clearSession } from '../../../lib/session.js';
+import { clearSession } from '../../../../lib/session';
 
 export async function GET() {
   await clearSession();
