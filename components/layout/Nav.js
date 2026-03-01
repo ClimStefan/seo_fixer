@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function Nav() {
   const pathname = usePathname();
   const [modalOpen, setModalOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(d => setUser(d.user))
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -26,15 +34,41 @@ export default function Nav() {
             <Link href="/pricing" className={`nav-link ${pathname === '/pricing' ? 'active' : ''}`}>
               Pricing
             </Link>
+            <Link href="/fixes" className={`nav-link ${pathname === '/fixes' ? 'active' : ''}`}>
+              Fixes
+            </Link>
           </div>
 
           <div className="nav-actions">
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => setModalOpen(true)}
-            >
-              Join the waitlist
-            </button>
+            {user ? (
+              <>
+                <Link href="/connect" className="btn btn-ghost btn-sm">
+                  {user.github_avatar && (
+                    <img
+                      src={user.github_avatar}
+                      alt={user.github_username}
+                      style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+                    />
+                  )}
+                  {user.github_username}
+                </Link>
+                <a href="/api/auth/logout" className="btn btn-secondary btn-sm">
+                  Sign out
+                </a>
+              </>
+            ) : (
+              <>
+                <Link href="/connect" className="btn btn-ghost btn-sm">
+                  Connect GitHub
+                </Link>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setModalOpen(true)}
+                >
+                  Get early access
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>

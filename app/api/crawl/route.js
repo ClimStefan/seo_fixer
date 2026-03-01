@@ -1,24 +1,3 @@
-/**
- * app/api/crawl/route.js — Full site crawl API endpoint
- *
- * A full crawl can take 30 seconds to 5 minutes depending on site size.
- * We can't use a regular JSON response because the browser would just
- * sit at a loading spinner with no feedback for minutes.
- *
- * Instead we use Server-Sent Events (SSE) — a simple protocol where the
- * server keeps the HTTP connection open and pushes text events down to
- * the browser as they happen. The browser reads them with EventSource.
- *
- * SSE format is just lines of text:
- *   data: {"type":"progress","message":"Found 12 pages..."}\n\n
- *
- * Each event ends with two newlines. The browser receives these in real
- * time and we update the UI progress bar as they arrive.
- *
- * At the end we send one final event with type "complete" and the full
- * crawl result as JSON, then close the stream.
- */
-
 import { crawlSite } from '../../../lib/crawler.js';
 
 export async function POST(request) {
@@ -49,12 +28,7 @@ export async function POST(request) {
     );
   }
 
-  /**
-   * Create a ReadableStream that we'll write SSE events into.
-   * The stream stays open for the duration of the crawl.
-   * We use a TransformStream internally to get a writer we can
-   * push data into from outside the stream constructor.
-   */
+ 
   const encoder = new TextEncoder();
   let streamController;
 
@@ -68,11 +42,7 @@ export async function POST(request) {
     },
   });
 
-  /**
-   * Helper to send one SSE event.
-   * Encodes the payload as JSON and writes it in SSE format.
-   * Two newlines at the end are required by the SSE protocol.
-   */
+
   function sendEvent(data) {
     try {
       const text = `data: ${JSON.stringify(data)}\n\n`;
@@ -82,12 +52,6 @@ export async function POST(request) {
     }
   }
 
-  /**
-   * Run the crawl in the background.
-   * We don't await it here — we just start it and let it push
-   * events via sendEvent() as it progresses.
-   * When it finishes (or errors), it sends the final event and closes the stream.
-   */
   (async () => {
     try {
       const result = await crawlSite(url.trim(), (phase, current, total, message) => {

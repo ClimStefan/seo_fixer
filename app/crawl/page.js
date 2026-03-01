@@ -13,19 +13,29 @@
  * 3. Complete — full site report with score, stats, and per-page issues
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Nav from '../../components/layout/Nav';
 import Footer from '../../components/layout/Footer';
 import IssueRow from '../../components/ui/IssueRow';
 import { useCrawl } from '../../hooks/useCrawl';
+import FixPanel from '../../components/ui/FixPanel';
 
 // ─────────────────────────────────────────
 // MAIN PAGE
 // ─────────────────────────────────────────
 
 export default function CrawlPage() {
-  const [url, setUrl] = useState('');
-  const { startCrawl, reset, status, progress, result, error } = useCrawl();
+const [url, setUrl] = useState('');
+const [user, setUser] = useState(null);
+const [activeIssue, setActiveIssue] = useState(null); // { issue, pageUrl }
+const { startCrawl, reset, status, progress, result, error } = useCrawl();
+
+useEffect(() => {
+  fetch('/api/auth/me')
+    .then(r => r.json())
+    .then(d => setUser(d.user))
+    .catch(() => {});
+}, []);
 
   const isRunning = status === 'discovering' || status === 'auditing';
 
@@ -41,8 +51,18 @@ export default function CrawlPage() {
   }
 
   return (
-    <div className="page-wrapper">
-      <Nav />
+<div className="page-wrapper">
+  <Nav />
+
+  {/* Fix panel — slides in when user clicks Fix this on an issue */}
+  {activeIssue && (
+    <FixPanel
+      issue={activeIssue.issue}
+      pageUrl={activeIssue.pageUrl}
+      isLoggedIn={!!user}
+      onClose={() => setActiveIssue(null)}
+    />
+  )}
 
       <div className="container" style={{ padding: '48px 32px 80px' }}>
 
@@ -102,9 +122,14 @@ export default function CrawlPage() {
         )}
 
         {/* ── RESULTS — shown when complete ── */}
-        {status === 'complete' && result && (
-          <CrawlResults result={result} onReset={handleReset} />
-        )}
+       {status === 'complete' && result && (
+  <CrawlResults
+    result={result}
+    onReset={handleReset}
+    onFixIssue={(issue, pageUrl) => setActiveIssue({ issue, pageUrl })}
+    isLoggedIn={!!user}
+  />
+)}
 
       </div>
 
@@ -253,7 +278,7 @@ function PhaseStep({ label, description, done, active }) {
  * then a list of all pages sorted by severity.
  * Each page is expandable to show its individual issues.
  */
-function CrawlResults({ result, onReset }) {
+function CrawlResults({ result, onReset, onFixIssue, isLoggedIn }) {
   const [expandedPage, setExpandedPage] = useState(null);
   const [pageFilter, setPageFilter] = useState('all');
 
@@ -388,11 +413,13 @@ function CrawlResults({ result, onReset }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {filteredPages.map((page, idx) => (
             <PageRow
-              key={page.url}
-              page={page}
-              isExpanded={expandedPage === page.url}
-              onToggle={() => setExpandedPage(expandedPage === page.url ? null : page.url)}
-            />
+  key={page.url}
+  page={page}
+  isExpanded={expandedPage === page.url}
+  onToggle={() => setExpandedPage(expandedPage === page.url ? null : page.url)}
+  onFixIssue={onFixIssue}
+  isLoggedIn={isLoggedIn}
+/>
           ))}
 
           {filteredPages.length === 0 && (
@@ -440,7 +467,7 @@ function CrawlResults({ result, onReset }) {
 // PAGE ROW — expandable per-page card
 // ─────────────────────────────────────────
 
-function PageRow({ page, isExpanded, onToggle }) {
+function PageRow({ page, isExpanded, onToggle, onFixIssue, isLoggedIn }) {
   let scoreClass = 'score-good';
   if (page.score < 50) scoreClass = 'score-bad';
   else if (page.score < 75) scoreClass = 'score-ok';
@@ -555,7 +582,13 @@ function PageRow({ page, isExpanded, onToggle }) {
             {[...page.issues]
               .sort((a, b) => ['critical', 'warning', 'info'].indexOf(a.severity) - ['critical', 'warning', 'info'].indexOf(b.severity))
               .map((issue, idx) => (
-                <IssueRow key={`${page.url}-${issue.id}`} issue={issue} index={idx} />
+                <IssueRow
+  key={`${page.url}-${issue.id}`}
+  issue={issue}
+  index={idx}
+  onFix={issue.canAutoFix ? () => onFixIssue(issue, page.url) : null}
+  isLoggedIn={isLoggedIn}
+/>
               ))
             }
           </div>

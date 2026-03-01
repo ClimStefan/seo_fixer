@@ -8,7 +8,7 @@
  *   [found value]
  *   [how to fix box]
  */
-export default function IssueRow({ issue, index }) {
+export default function IssueRow({ issue, index, onFix, isLoggedIn }) {
   const severityBadgeClass = {
     critical: 'badge badge-critical',
     warning:  'badge badge-warning',
@@ -112,6 +112,16 @@ export default function IssueRow({ issue, index }) {
         <div style={{ fontSize: '13px', color: 'var(--text)', lineHeight: '1.5' }}>
           {issue.recommendation}
         </div>
+        {onFix && (
+  <div style={{ marginTop: '10px' }}>
+    <button
+      className="btn btn-primary btn-sm"
+      onClick={e => { e.stopPropagation(); onFix(); }}
+    >
+      {isLoggedIn ? 'Fix this — create PR' : 'Fix this — connect GitHub first'}
+    </button>
+  </div>
+)}
       </div>
     </div>
   );

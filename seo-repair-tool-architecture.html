@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEO Repair Tool — Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #00e5a0;
+    --accent2: #7c6dfa;
+    --accent3: #fa6d6d;
+    --accent4: #f5a623;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --white: #ffffff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 40px 32px;
+    overflow-x: hidden;
+  }
+
+  /* noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left h1 {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .header-left h1 span { color: var(--accent); }
+  .header-left p { color: var(--muted); font-size: 14px; font-family: 'JetBrains Mono', monospace; }
+  .badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* MAIN GRID */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .card.green::before { background: var(--accent); }
+  .card.purple::before { background: var(--accent2); }
+  .card.red::before { background: var(--accent3); }
+  .card.orange::before { background: var(--accent4); }
+  .card.dim::before { background: var(--muted); }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .icon.green { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .icon.purple { background: rgba(124,109,250,0.15); color: var(--accent2); }
+  .icon.red { background: rgba(250,109,109,0.15); color: var(--accent3); }
+  .icon.orange { background: rgba(245,166,35,0.15); color: var(--accent4); }
+  .icon.dim { background: rgba(107,107,128,0.15); color: var(--muted); }
+
+  .card-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 14px;
+  }
+
+  .item-list { list-style: none; }
+  .item-list li {
+    font-size: 12px;
+    color: var(--text);
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .item-list li:last-child { border-bottom: none; }
+  .item-list li::before {
+    content: '—';
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .item-list li.auto::before { content: '✦'; color: var(--accent); }
+  .item-list li.user::before { content: '◈'; color: var(--accent4); }
+  .item-list li.ai::before { content: '◆'; color: var(--accent2); }
+
+  /* FLOW ARROW COLUMN */
+  .flow-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* ARROW CONNECTORS */
+  .arrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    gap: 8px;
+  }
+  .arrow-label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-align: center;
+  }
+  .arrow { font-size: 20px; color: var(--border); }
+  .arrow.green { color: var(--accent); }
+  .arrow.purple { color: var(--accent2); }
+  .arrow.orange { color: var(--accent4); }
+
+  /* WIDE SECTION */
+  .wide-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+  .wide-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  /* FLOW DIAGRAM */
+  .flow-section {
+    margin-top: 40px;
+  }
+
+  .flow-steps {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .flow-step {
+    flex: 1;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 16px 14px;
+    position: relative;
+    text-align: center;
+  }
+  .flow-step:first-child { border-radius: 12px 0 0 12px; }
+  .flow-step:last-child { border-radius: 0 12px 12px 0; }
+  .flow-step + .flow-step { border-left: none; }
+
+  .flow-step .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .flow-step .step-title {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .flow-step .step-desc {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.4;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .flow-step.active {
+    background: var(--surface2);
+    border-color: var(--accent);
+  }
+  .flow-step.active .step-title { color: var(--accent); }
+
+  /* PRICING SECTION */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .price-card.featured {
+    background: var(--surface2);
+    border-color: var(--accent);
+  }
+  .price-card .price {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  .price-card .price span {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+  .price-card .plan-name {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .price-card .plan-feature {
+    font-size: 11px;
+    color: var(--text);
+    padding: 3px 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .margin-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+  .margin-badge.good { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .margin-badge.great { background: rgba(124,109,250,0.15); color: var(--accent2); }
+
+  /* COSTS TABLE */
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .cost-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cost-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cost-table tr:last-child td { border-bottom: none; }
+  .cost-table .highlight { color: var(--accent); font-weight: 600; }
+  .cost-table .warn { color: var(--accent4); }
+
+  /* DB SCHEMA */
+  .db-col {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .db-col .field {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .db-col .field:last-child { border-bottom: none; }
+  .db-col .field .fname { color: var(--text); }
+  .db-col .field .ftype { color: var(--muted); }
+  .db-col .field .fpk { color: var(--accent); font-size: 9px; }
+
+  .gap-top { margin-top: 40px; }
+
+  /* TECH STACK */
+  .stack-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .chip {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .chip.green { border-color: rgba(0,229,160,0.4); color: var(--accent); background: rgba(0,229,160,0.07); }
+  .chip.purple { border-color: rgba(124,109,250,0.4); color: var(--accent2); background: rgba(124,109,250,0.07); }
+  .chip.orange { border-color: rgba(245,166,35,0.4); color: var(--accent4); background: rgba(245,166,35,0.07); }
+
+  .full-width { grid-column: 1 / -1; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; margin-bottom: 2px; }
+
+  .connector-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+  .connector-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    gap: 4px;
+  }
+  .connector-center .big-arrow {
+    font-size: 28px;
+    color: var(--accent);
+  }
+  .connector-center .label {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>SEO<span>Fix</span> — Architecture</h1>
+      <p>// full system design · v1.0 · 2026</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+      <div class="badge">Next.js + Supabase + Claude API</div>
+      <div class="badge" style="color:var(--accent2)">GitHub OAuth Integration</div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Auto-fixed by Claude</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div> Needs user input</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div> AI-assisted</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--muted)"></div> Automated / system</div>
+    <div class="legend-item" style="margin-left:auto">
+      <div style="width:10px;height:10px;border-radius:2px;background:rgba(0,229,160,0.2);border:1px solid var(--accent)"></div> PR flow
+    </div>
+    <div class="legend-item">
+      <div style="width:10px;height:10px;border-radius:2px;background:rgba(250,109,109,0.2);border:1px solid var(--accent3)"></div> Alert flow
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 1: USER ENTRY POINTS           -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label">01 — User Entry Points</div>
+  <div class="wide-grid" style="margin-bottom:24px">
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">🔗</div>Free Audit</div>
+      <div class="card-sub">no account required</div>
+      <ul class="item-list">
+        <li>Enter any URL</li>
+        <li>Instant single-page scan</li>
+        <li>Shows all issues found</li>
+        <li>Fixes locked behind paywall</li>
+        <li>CTA: "Fix these issues →"</li>
+      </ul>
+    </div>
+    <div class="card orange">
+      <div class="card-title"><div class="icon orange">💳</div>One-time Audit</div>
+      <div class="card-sub">$19 · no subscription</div>
+      <ul class="item-list">
+        <li>Full site crawl (all pages)</li>
+        <li>Complete fix report</li>
+        <li>Copy-paste code snippets</li>
+        <li>Plain English explanations</li>
+        <li>No monitoring after</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <div class="card-title"><div class="icon green">📡</div>Monthly Plan</div>
+      <div class="card-sub">$19–$99/mo · ongoing</div>
+      <ul class="item-list">
+        <li>Full audit on signup</li>
+        <li>Daily change monitoring</li>
+        <li>GitHub repo connected</li>
+        <li>Auto-fix via Pull Requests</li>
+        <li>Fix → Verify → Iterate loop</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <div class="card-title"><div class="icon purple">🤝</div>Cross-discount</div>
+      <div class="card-sub">keywords cluster users</div>
+      <ul class="item-list">
+        <li>20% off for KC users</li>
+        <li>Email-verified coupon</li>
+        <li>Separate accounts</li>
+        <li>No forced bundling</li>
+        <li>Upsell opportunity</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 2: CRAWLER ENGINE              -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">02 — Crawler Engine</div>
+  <div class="three-col" style="margin-bottom:24px">
+    <div class="card green">
+      <div class="card-title"><div class="icon green">🕷️</div>Full Crawl</div>
+      <div class="card-sub">on signup + weekly</div>
+      <ul class="item-list">
+        <li>Puppeteer — JS-rendered pages</li>
+        <li>Discovers all internal URLs</li>
+        <li>Stores content hash per page</li>
+        <li>Parses HTML into AST</li>
+        <li>Extracts all SEO signals</li>
+        <li>Queued in background worker</li>
+      </ul>
+    </div>
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">👁️</div>Daily Monitor</div>
+      <div class="card-sub">every 24h · lightweight</div>
+      <ul class="item-list">
+        <li>Re-checks last-modified headers</li>
+        <li>Compares stored content hash</li>
+        <li>Only re-crawls changed pages</li>
+        <li>~5–10% of pages on avg day</li>
+        <li>Diffs issues: new / fixed / same</li>
+        <li>Triggers alerts on new criticals</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <div class="card-title"><div class="icon purple">✅</div>Verify Crawl</div>
+      <div class="card-sub">on-demand · single page</div>
+      <ul class="item-list">
+        <li>Triggered after fix is applied</li>
+        <li>Checks one specific page only</li>
+        <li>Takes ~3–5 seconds</li>
+        <li>Confirms fix is live in prod</li>
+        <li>Marks issue resolved or retry</li>
+        <li>Unlimited per day</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 3: ISSUE CLASSIFIER            -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">03 — Issue Classifier (no AI, pure rules)</div>
+  <div class="two-col" style="margin-bottom:24px">
+    <div class="card red">
+      <div class="card-title"><div class="icon red">🚨</div>Critical Issues</div>
+      <div class="card-sub">immediate action required</div>
+      <ul class="item-list">
+        <li class="auto">Missing canonical tag</li>
+        <li class="auto">Missing meta description</li>
+        <li class="auto">Missing H1 tag</li>
+        <li class="auto">Missing title tag</li>
+        <li class="user">Broken internal links (404)</li>
+        <li class="user">Broken external links (404)</li>
+        <li class="auto">Missing alt text on images</li>
+        <li class="user">Redirect chains (3+ hops)</li>
+      </ul>
+    </div>
+    <div class="card orange">
+      <div class="card-title"><div class="icon orange">⚠️</div>Warnings + Info</div>
+      <div class="card-sub">should be fixed soon</div>
+      <ul class="item-list">
+        <li class="auto">Title too long (&gt;60 chars)</li>
+        <li class="auto">Meta description too long (&gt;160)</li>
+        <li class="auto">Title too short (&lt;30 chars)</li>
+        <li class="ai">Duplicate title tags</li>
+        <li class="ai">Weak internal linking</li>
+        <li class="user">Missing schema markup</li>
+        <li class="ai">Keyword not in title/H1</li>
+        <li class="dim">Slow page load (&gt;3s)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 4: FIX ENGINE (THE CORE)       -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">04 — Fix Engine · The Core Product</div>
+  <div class="three-col" style="margin-bottom:8px">
+    <div class="card green">
+      <div class="card-title"><div class="icon green">✦</div>Auto-Fix (Claude)</div>
+      <div class="card-sub">no user input needed</div>
+      <ul class="item-list">
+        <li class="auto">Generate canonical tag from URL</li>
+        <li class="auto">Rewrite title under 60 chars</li>
+        <li class="auto">Generate meta description</li>
+        <li class="auto">Generate H1 from page content</li>
+        <li class="auto">Write missing alt text</li>
+        <li class="auto">Fix too-short title</li>
+      </ul>
+      <div style="margin-top:12px;padding:10px;background:rgba(0,229,160,0.07);border-radius:8px;border:1px solid rgba(0,229,160,0.2)">
+        <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent)">FLOW</div>
+        <div style="font-size:11px;margin-top:4px;line-height:1.6;color:var(--text)">Claude generates fix → parse HTML AST → inject change → validate HTML → create PR on GitHub → user merges</div>
+      </div>
+    </div>
+    <div class="card orange">
+      <div class="card-title"><div class="icon orange">◈</div>User-Guided Fix</div>
+      <div class="card-sub">user provides context</div>
+      <ul class="item-list">
+        <li class="user">Broken link → suggest from sitemap → user confirms correct URL</li>
+        <li class="user">Broken external link → user pastes replacement</li>
+        <li class="user">Redirect chain → show chain → user picks target</li>
+        <li class="user">Weak internal links → Claude suggests pages → user approves</li>
+      </ul>
+      <div style="margin-top:12px;padding:10px;background:rgba(245,166,35,0.07);border-radius:8px;border:1px solid rgba(245,166,35,0.2)">
+        <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent4)">FLOW</div>
+        <div style="font-size:11px;margin-top:4px;line-height:1.6;color:var(--text)">Alert user → UI shows options → user selects → Claude generates fix → PR created</div>
+      </div>
+    </div>
+    <div class="card purple">
+      <div class="card-title"><div class="icon purple">◆</div>Fix → Verify Loop</div>
+      <div class="card-sub">unlimited iterations/day</div>
+      <ul class="item-list">
+        <li class="ai">User merges PR</li>
+        <li class="ai">Clicks "Verify Fix"</li>
+        <li class="ai">Single-page re-crawl (~5s)</li>
+        <li class="ai">Still broken → Claude explains why</li>
+        <li class="ai">Claude tries different approach</li>
+        <li class="ai">New PR generated</li>
+      </ul>
+      <div style="margin-top:12px;padding:10px;background:rgba(124,109,250,0.07);border-radius:8px;border:1px solid rgba(124,109,250,0.2)">
+        <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent2)">COST</div>
+        <div style="font-size:11px;margin-top:4px;line-height:1.6;color:var(--text)">Claude only runs on failed verify. $0.01–0.02 per iteration. Unlimited feels free to user.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 5: GITHUB INTEGRATION          -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">05 — GitHub Integration</div>
+  <div class="wide-grid" style="margin-bottom:24px">
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">🔐</div>OAuth Connect</div>
+      <div class="card-sub">one-time setup</div>
+      <ul class="item-list">
+        <li>GitHub App OAuth flow</li>
+        <li>Read + write repo access</li>
+        <li>Token stored in Supabase</li>
+        <li>Scoped to selected repo only</li>
+      </ul>
+    </div>
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">🌿</div>Branch + Commit</div>
+      <div class="card-sub">per fix</div>
+      <ul class="item-list">
+        <li>Branch: seo-fix/[issue-slug]</li>
+        <li>Parse file → AST edit → serialize</li>
+        <li>Validate HTML before commit</li>
+        <li>One fix per branch</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <div class="card-title"><div class="icon green">🔀</div>Pull Request</div>
+      <div class="card-sub">auto-created</div>
+      <ul class="item-list">
+        <li>PR title: "SEO Fix: [issue]"</li>
+        <li>Body: what + why + before/after</li>
+        <li>User reviews diff on GitHub</li>
+        <li>Merge = change goes live</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <div class="card-title"><div class="icon purple">🔔</div>Webhook</div>
+      <div class="card-sub">post-merge trigger</div>
+      <ul class="item-list">
+        <li>GitHub webhook → your API</li>
+        <li>Detects PR merged event</li>
+        <li>Schedules verify crawl</li>
+        <li>Marks issue as "pending verify"</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 6: DATABASE SCHEMA             -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">06 — Database Schema (Supabase)</div>
+  <div class="wide-grid" style="margin-bottom:24px">
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">👤</div>users</div>
+      <div class="db-col" style="margin-top:8px">
+        <div class="field"><span class="fname">id</span><span><span class="fpk">PK</span> <span class="ftype">uuid</span></span></div>
+        <div class="field"><span class="fname">email</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">plan</span><span class="ftype">free|starter|growth|pro</span></div>
+        <div class="field"><span class="fname">github_token</span><span class="ftype">encrypted text</span></div>
+        <div class="field"><span class="fname">stripe_customer_id</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">created_at</span><span class="ftype">timestamp</span></div>
+      </div>
+    </div>
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">🌐</div>sites</div>
+      <div class="db-col" style="margin-top:8px">
+        <div class="field"><span class="fname">id</span><span><span class="fpk">PK</span> <span class="ftype">uuid</span></span></div>
+        <div class="field"><span class="fname">user_id</span><span class="ftype">FK → users</span></div>
+        <div class="field"><span class="fname">domain</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">github_repo</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">last_full_crawl</span><span class="ftype">timestamp</span></div>
+        <div class="field"><span class="fname">last_monitor_check</span><span class="ftype">timestamp</span></div>
+        <div class="field"><span class="fname">total_pages</span><span class="ftype">int</span></div>
+      </div>
+    </div>
+    <div class="card dim">
+      <div class="card-title"><div class="icon dim">📄</div>pages</div>
+      <div class="db-col" style="margin-top:8px">
+        <div class="field"><span class="fname">id</span><span><span class="fpk">PK</span> <span class="ftype">uuid</span></span></div>
+        <div class="field"><span class="fname">site_id</span><span class="ftype">FK → sites</span></div>
+        <div class="field"><span class="fname">url</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">content_hash</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">last_crawled</span><span class="ftype">timestamp</span></div>
+        <div class="field"><span class="fname">github_file_path</span><span class="ftype">text</span></div>
+      </div>
+    </div>
+    <div class="card red">
+      <div class="card-title"><div class="icon red">🐛</div>issues</div>
+      <div class="db-col" style="margin-top:8px">
+        <div class="field"><span class="fname">id</span><span><span class="fpk">PK</span> <span class="ftype">uuid</span></span></div>
+        <div class="field"><span class="fname">page_id</span><span class="ftype">FK → pages</span></div>
+        <div class="field"><span class="fname">type</span><span class="ftype">missing_canonical etc</span></div>
+        <div class="field"><span class="fname">severity</span><span class="ftype">critical|warn|info</span></div>
+        <div class="field"><span class="fname">status</span><span class="ftype">open|fixed|ignored</span></div>
+        <div class="field"><span class="fname">current_value</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">fix_pr_url</span><span class="ftype">text</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="two-col" style="margin-bottom:24px">
+    <div class="card green">
+      <div class="card-title"><div class="icon green">🔧</div>fixes</div>
+      <div class="db-col" style="margin-top:8px">
+        <div class="field"><span class="fname">id</span><span><span class="fpk">PK</span> <span class="ftype">uuid</span></span></div>
+        <div class="field"><span class="fname">issue_id</span><span class="ftype">FK → issues</span></div>
+        <div class="field"><span class="fname">generated_by</span><span class="ftype">claude-sonnet-4-5</span></div>
+        <div class="field"><span class="fname">fix_content</span><span class="ftype">text (the code snippet)</span></div>
+        <div class="field"><span class="fname">explanation</span><span class="ftype">text (plain english)</span></div>
+        <div class="field"><span class="fname">github_pr_url</span><span class="ftype">text</span></div>
+        <div class="field"><span class="fname">status</span><span class="ftype">pending|merged|verified|failed</span></div>
+        <div class="field"><span class="fname">iteration</span><span class="ftype">int (attempt #)</span></div>
+      </div>
+    </div>
+    <div class="card purple">
+      <div class="card-title"><div class="icon purple">📊</div>audit_runs</div>
+      <div class="db-col" style="margin-top:8px">
+        <div class="field"><span class="fname">id</span><span><span class="fpk">PK</span> <span class="ftype">uuid</span></span></div>
+        <div class="field"><span class="fname">site_id</span><span class="ftype">FK → sites</span></div>
+        <div class="field"><span class="fname">run_type</span><span class="ftype">full|daily|verify</span></div>
+        <div class="field"><span class="fname">pages_scanned</span><span class="ftype">int</span></div>
+        <div class="field"><span class="fname">issues_found</span><span class="ftype">int</span></div>
+        <div class="field"><span class="fname">issues_fixed</span><span class="ftype">int</span></div>
+        <div class="field"><span class="fname">started_at</span><span class="ftype">timestamp</span></div>
+        <div class="field"><span class="fname">completed_at</span><span class="ftype">timestamp</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 7: PRICING & COSTS             -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">07 — Pricing Tiers vs Real Costs</div>
+  <div class="pricing-grid" style="margin-bottom:24px">
+    <div class="price-card">
+      <div class="plan-name">Free</div>
+      <div class="price">$0</div>
+      <div style="margin-top:12px">
+        <div class="plan-feature">• Single page audit</div>
+        <div class="plan-feature">• Issues shown, no fixes</div>
+        <div class="plan-feature">• No account needed</div>
+        <div class="plan-feature">• Lead magnet only</div>
+      </div>
+      <div class="margin-badge good">cost: ~$0.01/audit</div>
+    </div>
+    <div class="price-card">
+      <div class="plan-name">One-time Report</div>
+      <div class="price">$19</div>
+      <div style="margin-top:12px">
+        <div class="plan-feature">• Full site crawl</div>
+        <div class="plan-feature">• All fix snippets</div>
+        <div class="plan-feature">• Plain English guide</div>
+        <div class="plan-feature">• No monitoring</div>
+      </div>
+      <div class="margin-badge good">cost: ~$1–3 · margin ~85%</div>
+    </div>
+    <div class="price-card featured">
+      <div class="plan-name" style="color:var(--accent)">★ Starter</div>
+      <div class="price">$29<span>/mo</span></div>
+      <div style="margin-top:12px">
+        <div class="plan-feature">• Up to 100 pages</div>
+        <div class="plan-feature">• Daily monitoring</div>
+        <div class="plan-feature">• GitHub auto-fix PRs</div>
+        <div class="plan-feature">• Unlimited verify loops</div>
+      </div>
+      <div class="margin-badge great">cost: ~$3–5/mo · margin ~85%</div>
+    </div>
+    <div class="price-card">
+      <div class="plan-name">Growth</div>
+      <div class="price">$59<span>/mo</span></div>
+      <div style="margin-top:12px">
+        <div class="plan-feature">• Up to 500 pages</div>
+        <div class="plan-feature">• Everything in Starter</div>
+        <div class="plan-feature">• Priority alerts</div>
+        <div class="plan-feature">• Multiple sites</div>
+      </div>
+      <div class="margin-badge great">cost: ~$8–12/mo · margin ~80%</div>
+    </div>
+  </div>
+
+  <!-- COST TABLE -->
+  <div class="card dim" style="margin-bottom:40px">
+    <div class="card-title" style="margin-bottom:16px"><div class="icon purple">💰</div>Claude API Cost Breakdown</div>
+    <table class="cost-table">
+      <tr>
+        <th>Action</th>
+        <th>Tokens (in/out)</th>
+        <th>Cost per call</th>
+        <th>Frequency</th>
+        <th>Monthly est.</th>
+      </tr>
+      <tr>
+        <td>Generate fix for one issue</td>
+        <td>~500 / ~300</td>
+        <td class="highlight">~$0.006</td>
+        <td>On user click</td>
+        <td>Tied to usage</td>
+      </tr>
+      <tr>
+        <td>Full audit batch (50 pages)</td>
+        <td>~25K / ~15K</td>
+        <td class="highlight">~$0.30</td>
+        <td>Once + weekly</td>
+        <td>~$1.20/user</td>
+      </tr>
+      <tr>
+        <td>Daily monitor (10 pages changed)</td>
+        <td>~5K / ~3K</td>
+        <td class="highlight">~$0.06</td>
+        <td>Daily</td>
+        <td>~$1.80/user</td>
+      </tr>
+      <tr>
+        <td>Verify crawl (1 page)</td>
+        <td>No Claude needed</td>
+        <td class="highlight">~$0.00</td>
+        <td>On demand</td>
+        <td>$0</td>
+      </tr>
+      <tr>
+        <td>Fix iteration (retry)</td>
+        <td>~600 / ~400</td>
+        <td class="highlight">~$0.008</td>
+        <td>On failed verify</td>
+        <td>Tied to usage</td>
+      </tr>
+      <tr style="background:rgba(0,229,160,0.05)">
+        <td><strong>Total per Starter user/mo</strong></td>
+        <td colspan="3">Full audit + daily monitoring + ~10 fixes/mo</td>
+        <td class="highlight"><strong>~$3–5/mo</strong></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 8: TECH STACK                  -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">08 — Tech Stack</div>
+  <div class="three-col" style="margin-bottom:40px">
+    <div class="card green">
+      <div class="card-title"><div class="icon green">🖥️</div>Frontend</div>
+      <div class="stack-chips">
+        <span class="chip green">Next.js 14</span>
+        <span class="chip green">Tailwind CSS</span>
+        <span class="chip green">Shadcn/ui</span>
+        <span class="chip green">React Query</span>
+      </div>
+    </div>
+    <div class="card purple">
+      <div class="card-title"><div class="icon purple">⚙️</div>Backend + DB</div>
+      <div class="stack-chips">
+        <span class="chip purple">Supabase</span>
+        <span class="chip purple">Vercel Cron</span>
+        <span class="chip purple">Node.js workers</span>
+        <span class="chip purple">Stripe</span>
+      </div>
+    </div>
+    <div class="card orange">
+      <div class="card-title"><div class="icon orange">🤖</div>AI + Crawling</div>
+      <div class="stack-chips">
+        <span class="chip orange">Claude Sonnet 4.5</span>
+        <span class="chip orange">Puppeteer</span>
+        <span class="chip orange">node-html-parser</span>
+        <span class="chip orange">GitHub API</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 9: BUILD ORDER                 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="section-label gap-top">09 — Recommended Build Order</div>
+  <div class="flow-steps" style="margin-bottom:40px">
+    <div class="flow-step active">
+      <div class="step-num">PHASE 1</div>
+      <div class="step-title">Free Auditor</div>
+      <div class="step-desc">Single URL scan. Show all issues. Validate demand. ~2 weeks.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PHASE 2</div>
+      <div class="step-title">Fix Reports</div>
+      <div class="step-desc">Claude generates fix snippets. $19 one-time. First revenue. ~2 weeks.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PHASE 3</div>
+      <div class="step-title">GitHub Connect</div>
+      <div class="step-desc">OAuth + PR creation. Auto-fix flow. ~3 weeks.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PHASE 4</div>
+      <div class="step-title">Full Crawl</div>
+      <div class="step-desc">Multi-page audit. Supabase storage. Background queue. ~2 weeks.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PHASE 5</div>
+      <div class="step-title">Daily Monitor</div>
+      <div class="step-desc">Vercel cron. Hash diffs. Alerts. Subscriptions live. ~2 weeks.</div>
+    </div>
+    <div class="flow-step">
+      <div class="step-num">PHASE 6</div>
+      <div class="step-title">Verify Loop</div>
+      <div class="step-desc">Fix → verify → iterate. Claude retry logic. ~1 week.</div>
+    </div>
+  </div>
+
+  <!-- FOOTER NOTE -->
+  <div style="text-align:center;padding:24px;border-top:1px solid var(--border)">
+    <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">
+      ✦ auto-fix (Claude) &nbsp;◈ user input required &nbsp;◆ AI-assisted &nbsp;— system/automated
+      &nbsp;&nbsp;·&nbsp;&nbsp; Claude only runs when generating or retrying a fix — crawling is pure Node.js
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
