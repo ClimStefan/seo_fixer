@@ -16,6 +16,7 @@ export default function HomePage() {
   const [result, setResult] = useState(null);
   const [filter, setFilter] = useState(FILTER_ALL);
   const resultsRef = useRef(null);
+  const [lightbox, setLightbox] = useState(null);
 
   async function handleAudit(e) {
     e.preventDefault();
@@ -51,6 +52,26 @@ export default function HomePage() {
         ? [...result.issues].sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity))
         : result.issues.filter(i => i.severity === filter))
     : [];
+
+    function Lightbox({ src, alt, onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px', cursor: 'zoom-out',
+      }}
+    >
+      <img
+        src={src}
+        alt={alt}
+        style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '8px', boxShadow: '0 25px 80px rgba(0,0,0,0.6)' }}
+      />
+    </div>
+  );
+}
 
   return (
     <div className="page-wrapper">
@@ -208,6 +229,7 @@ export default function HomePage() {
                   <img
                     src="/screenshots/s1.JPG"
                     alt="Full site crawl results"
+                     onClick={() => setLightbox({ src: '/screenshots/s1.JPG', alt: '...' })}
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
                 </div>
@@ -223,6 +245,7 @@ export default function HomePage() {
                   <img
                     src="/screenshots/s2.JPG"
                     alt="GitHub repo connection and file detection"
+                     onClick={() => setLightbox({ src: '/screenshots/s2.JPG', alt: '...' })}
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
                 </div>
@@ -270,6 +293,7 @@ export default function HomePage() {
                 <img
                   src="/screenshots/s3.JPG"
                   alt="GitHub PR with SEO fixes, diff view ready to merge"
+                   onClick={() => setLightbox({ src: '/screenshots/s3.JPG', alt: '...' })}
                   style={{ width: '100%', borderRadius: '10px', border: '1px solid rgba(0,229,160,0.2)', display: 'block', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
                 />
 
@@ -305,12 +329,14 @@ export default function HomePage() {
                   <img
                     src="/screenshots/s4.JPG"
                     alt="Issue list with Fix this button"
+                     onClick={() => setLightbox({ src: '/screenshots/s4.JPG', alt: '...' })}
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
                   {/* ↓ FOUNDERS IMAGE 2 — replace the src value with your screenshot path */}
                   <img
                     src="/screenshots/s5.JPG"
                     alt="Fix panel with before and after diff"
+                     onClick={() => setLightbox({ src: '/screenshots/s5.JPG', alt: '...' })}
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
                 </div>
@@ -329,7 +355,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 1 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw1.JPG" alt="Crawl your site" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw1.JPG" alt="Crawl your site"  onClick={() => setLightbox({ src: '/screenshots/sw1.JPG', alt: '...' })} style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>1</span>
@@ -340,7 +366,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 2 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw2.JPG" alt="See every issue" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw2.JPG" alt="See every issue" onClick={() => setLightbox({ src: '/screenshots/sw2.JPG', alt: '...' })} style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>2</span>
@@ -351,7 +377,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 3 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw3.JPG" alt="Review the fix" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw3.JPG" alt="Review the fix" onClick={() => setLightbox({ src: '/screenshots/sw3.JPG', alt: '...' })} style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>3</span>
@@ -362,7 +388,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 4 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw4.JPG" alt="Merge the PR" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw4.JPG" alt="Merge the PR" onClick={() => setLightbox({ src: '/screenshots/sw4.JPG', alt: '...' })} style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>4</span>
@@ -396,7 +422,7 @@ export default function HomePage() {
 
         </>
       )}
-
+{lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
       <Footer />
 
       <style>{`
