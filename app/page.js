@@ -206,7 +206,7 @@ export default function HomePage() {
                   </div>
                   {/* ↓ STEP 1 IMAGE — replace the src value with your screenshot path */}
                   <img
-                    src="/screenshots/s1.jpg"
+                    src="/screenshots/s1.JPG"
                     alt="Full site crawl results"
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
@@ -221,7 +221,7 @@ export default function HomePage() {
                   </div>
                   {/* ↓ STEP 2 IMAGE — replace the src value with your screenshot path */}
                   <img
-                    src="/screenshots/s2.jpg"
+                    src="/screenshots/s2.JPG"
                     alt="GitHub repo connection and file detection"
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
@@ -268,7 +268,7 @@ export default function HomePage() {
 
                 {/* ↓ STEP 3 IMAGE — replace the src value with your screenshot path */}
                 <img
-                  src="/screenshots/s3.jpg"
+                  src="/screenshots/s3.JPG"
                   alt="GitHub PR with SEO fixes, diff view ready to merge"
                   style={{ width: '100%', borderRadius: '10px', border: '1px solid rgba(0,229,160,0.2)', display: 'block', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}
                 />
@@ -303,13 +303,13 @@ export default function HomePage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {/* ↓ FOUNDERS IMAGE 1 — replace the src value with your screenshot path */}
                   <img
-                    src="/screenshots/s4.jpg"
+                    src="/screenshots/s4.JPG"
                     alt="Issue list with Fix this button"
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
                   {/* ↓ FOUNDERS IMAGE 2 — replace the src value with your screenshot path */}
                   <img
-                    src="/screenshots/s5.jpg"
+                    src="/screenshots/s5.JPG"
                     alt="Fix panel with before and after diff"
                     style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }}
                   />
@@ -329,7 +329,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 1 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw1.jpg" alt="Crawl your site" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw1.JPG" alt="Crawl your site" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>1</span>
@@ -340,7 +340,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 2 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw2.jpg" alt="See every issue" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw2.JPG" alt="See every issue" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>2</span>
@@ -351,7 +351,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 3 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw3.jpg" alt="Review the fix" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw3.JPG" alt="Review the fix" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>3</span>
@@ -362,7 +362,7 @@ export default function HomePage() {
 
                 {/* ↓ FLOW IMAGE 4 — replace the src value with your screenshot path */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <img src="/screenshots/sw4.jpg" alt="Merge the PR" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
+                  <img src="/screenshots/sw4.JPG" alt="Merge the PR" style={{ width: '100%', borderRadius: '10px', border: '1px solid var(--border)', display: 'block' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--bg)' }}>4</span>
