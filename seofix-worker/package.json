@@ -1,0 +1,18 @@
+{
+  "name": "seofix-worker",
+  "version": "1.0.0",
+  "description": "SEOFix background worker — handles heavy crawling, link checking, and monitoring",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2",
+    "node-html-parser": "^6.1.12",
+    "xml2js": "^0.6.2"
+  }
+}

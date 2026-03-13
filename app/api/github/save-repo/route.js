@@ -7,14 +7,13 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function POST(request) {
-  const user = await getSession();
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+  const authObject = await auth();
+const userId = authObject.userId;
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const body = await request.json();
   const { domain, github_repo, github_owner, github_branch } = body;
@@ -27,7 +26,7 @@ export async function POST(request) {
   const { data: existing } = await supabase
     .from('seofix_sites')
     .select('id')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   let site;
@@ -46,7 +45,7 @@ export async function POST(request) {
     // Insert new record
     const { data, error } = await supabase
       .from('seofix_sites')
-      .insert({ user_id: user.id, domain, github_repo, github_owner, github_branch })
+      .insert({ user_id: userId, domain, github_repo, github_owner, github_branch })
       .select()
       .single();
 

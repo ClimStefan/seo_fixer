@@ -18,7 +18,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { supabase } from '../../../../../lib/supabase.js';
-import { setSession } from '../../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -107,11 +107,13 @@ export async function GET(request) {
   let userId;
   try {
     // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('seofix_users')
-      .select('id')
-      .eq('github_username', githubUser.login)
-      .single();
+   const { userId: clerkUserId } = await auth();
+
+const { data: existingUser } = await supabase
+  .from('seofix_users')
+  .select('id')
+  .eq('id', clerkUserId)
+  .single();
 
     if (existingUser) {
       // Update their token and profile info
@@ -127,14 +129,18 @@ export async function GET(request) {
       userId = existingUser.id;
     } else {
       // Create new user
-      const { data: newUser, error } = await supabase
-        .from('seofix_users')
-        .insert({
-          email: githubEmail,
-          github_token: accessToken,
-          github_username: githubUser.login,
-          github_avatar: githubUser.avatar_url,
-        })
+     // Get Clerk userId from the session
+const { userId: clerkUserId } = await auth();
+
+const { data: newUser, error } = await supabase
+  .from('seofix_users')
+  .insert({
+    id: clerkUserId,        // ← use Clerk ID as the primary key
+    email: githubEmail,
+    github_token: accessToken,
+    github_username: githubUser.login,
+    github_avatar: githubUser.avatar_url,
+  })
         .select('id')
         .single();
 
@@ -151,8 +157,6 @@ export async function GET(request) {
   }
 
   // ── Step 5: Set session cookie ──
-  await setSession(userId);
+ return NextResponse.redirect(`${appUrl}/connect?success=true`);
 
-  // ── Step 6: Redirect to repo selector ──
-  return NextResponse.redirect(`${appUrl}/connect?success=true`);
 }

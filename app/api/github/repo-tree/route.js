@@ -13,24 +13,28 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function GET() {
-  const user = await getSession();
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+const { userId } = await auth();
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const { data: site } = await supabase
     .from('seofix_sites')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   if (!site) {
     return NextResponse.json({ error: 'No repository connected.' }, { status: 400 });
   }
+
+  const { data: user } = await supabase
+  .from('seofix_users')
+  .select('github_token')
+  .eq('id', userId)
+  .single();
 
   const { github_owner: owner, github_repo: repo, github_branch: branch } = site;
 

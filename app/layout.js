@@ -1,5 +1,7 @@
 import '../styles/globals.css';
 import { Analytics } from "@vercel/analytics/next"
+import { ClerkProvider } from '@clerk/nextjs';
+
 
 export const metadata = {
   title: 'Next.js',
@@ -8,9 +10,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
+    <ClerkProvider dynamic>
     <html lang="en">
       <Analytics/>
       <body>{children}</body>
     </html>
+    </ClerkProvider>
   )
 }

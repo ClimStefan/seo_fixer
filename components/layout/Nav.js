@@ -3,11 +3,17 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { useClerk } from '@clerk/nextjs';
+
 
 export default function Nav() {
   const pathname = usePathname();
   const [modalOpen, setModalOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [budget, setBudget] = useState(null);
+
+  const { signOut } = useClerk();
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -16,69 +22,91 @@ export default function Nav() {
       .catch(() => {});
   }, []);
 
-  return (
-    <>
-      <nav className="nav">
-        <div className="container nav-inner">
-          <Link href="/" className="nav-logo">
-            SEO<span>Fix</span>
+  useEffect(() => {
+  fetch('/api/fix/budget')
+    .then(r => r.json())
+    .then(d => setBudget(d.budget))
+    .catch(() => {});
+}, []);
+
+return (
+  <>
+    <nav className="nav">
+      <div className="container nav-inner">
+        <Link href="/" className="nav-logo">
+          SEO<span>Fix</span>
+        </Link>
+
+        <div className="nav-links">
+          <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
+            Free audit
           </Link>
-
-          <div className="nav-links">
-            <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
-              Free audit
-            </Link>
-            <Link href="/crawl" className={`nav-link ${pathname === '/crawl' ? 'active' : ''}`}>
-              Full site crawl
-            </Link>
-            <Link href="/pricing" className={`nav-link ${pathname === '/pricing' ? 'active' : ''}`}>
-              Pricing
-            </Link>
-            <Link href="/fixes" className={`nav-link ${pathname === '/fixes' ? 'active' : ''}`}>
-              Fixes
-            </Link>
-          </div>
-
-          <div className="nav-actions">
-            {user ? (
-              <>
-                <Link href="/connect" className="btn btn-ghost btn-sm">
-                  {user.github_avatar && (
-                    <img
-                      src={user.github_avatar}
-                      alt={user.github_username}
-                      style={{ width: '20px', height: '20px', borderRadius: '50%' }}
-                    />
-                  )}
-                  {user.github_username}
-                </Link>
-                <a href="/api/auth/logout" className="btn btn-secondary btn-sm">
-                  Sign out
-                </a>
-              </>
-            ) : (
-              <>
-                <Link href="/connect" className="btn btn-ghost btn-sm">
-                  Connect GitHub
-                </Link>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setModalOpen(true)}
-                >
-                  Get early access
-                </button>
-              </>
-            )}
-          </div>
+          <Link href="/crawl" className={`nav-link ${pathname === '/crawl' ? 'active' : ''}`}>
+            Full site crawl
+          </Link>
+          <Link href="/pricing" className={`nav-link ${pathname === '/pricing' ? 'active' : ''}`}>
+            Pricing
+          </Link>
+          <Link href="/fixes" className={`nav-link ${pathname === '/fixes' ? 'active' : ''}`}>
+            Fixes
+          </Link>
         </div>
-      </nav>
 
-      {/* Modal — rendered at nav level so it overlays everything */}
-      {modalOpen && (
-        <WaitlistModal onClose={() => setModalOpen(false)} />
+        <div className="nav-actions">
+          <SignedOut>
+            <Link href="/connect" className="btn btn-ghost btn-sm">
+              Connect GitHub
+            </Link>
+            <SignInButton mode="modal">
+              <button className="btn btn-ghost btn-sm">Sign in</button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="btn btn-primary btn-sm">Get started</button>
+            </SignUpButton>
+          </SignedOut>
+
+         <SignedIn>
+  {user?.github_username ? (
+    <Link href="/connect" className="btn btn-ghost btn-sm">
+      {user.github_avatar && (
+        <img
+          src={user.github_avatar}
+          alt={user.github_username}
+          style={{ width: '20px', height: '20px', borderRadius: '50%' }}
+        />
       )}
-    </>
-  );
+      {user.github_username}
+    </Link>
+  ) : (
+    <Link href="/connect" className="btn btn-ghost btn-sm">
+      Connect GitHub
+    </Link>
+  )}
+  {budget && (
+  <span style={{ 
+    fontSize: '12px', 
+    color: budget.remaining <= 10 ? 'var(--red)' : 'var(--muted)',
+    padding: '4px 8px',
+    background: 'var(--surface2)',
+    borderRadius: '7px',
+    border: '1px solid var(--border)',
+  }}>
+    {budget.type === 'monthly' 
+      ? '∞ fixes' 
+      : `${budget.remaining} fixes left`}
+  </span>
+)}
+  <UserButton afterSignOutUrl="/" />
+</SignedIn>
+        </div>
+      </div>
+    </nav>
+
+    {modalOpen && (
+      <WaitlistModal onClose={() => setModalOpen(false)} />
+    )}
+  </>
+);
 }
 
 /**

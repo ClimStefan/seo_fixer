@@ -7,22 +7,20 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
+import { supabase } from '../../../../lib/supabase.js';
 
 export async function GET() {
-  const user = await getSession();
+  const authObject = await auth();
+  const userId = authObject.userId;
+  
+  if (!userId) return NextResponse.json({ user: null }, { status: 200 });
 
-  if (!user) {
-    return NextResponse.json({ user: null }, { status: 200 });
-  }
+  const { data: user } = await supabase
+    .from('seofix_users')
+    .select('id, email, github_username, github_avatar')
+    .eq('id', userId)
+    .single();
 
-  // Return user info but strip the sensitive github_token
-  return NextResponse.json({
-    user: {
-      id: user.id,
-      email: user.email,
-      github_username: user.github_username,
-      github_avatar: user.github_avatar,
-    },
-  });
+  return NextResponse.json({ user: user || null });
 }

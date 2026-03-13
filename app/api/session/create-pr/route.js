@@ -13,17 +13,18 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function POST(request) {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+const authObject = await auth();
+const userId = authObject.userId;
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const { data: site } = await supabase
     .from('seofix_sites')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   if (!site) return NextResponse.json({ error: 'No repository connected.' }, { status: 400 });
@@ -36,7 +37,7 @@ export async function POST(request) {
     .from('seofix_sessions')
     .select('*')
     .eq('id', sessionId)
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   if (!session) return NextResponse.json({ error: 'Session not found.' }, { status: 404 });

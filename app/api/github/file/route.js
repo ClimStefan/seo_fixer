@@ -9,20 +9,27 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function GET(request) {
-  const user = await getSession();
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+const authObject = await auth();
+const userId = authObject.userId;
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const { data: site } = await supabase
     .from('seofix_sites')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
+
+    const { data: user } = await supabase
+  .from('seofix_users')
+  .select('github_token')
+  .eq('id', userId)
+  .single();
+
+if (!user?.github_token) return NextResponse.json({ error: 'No GitHub token.' }, { status: 401 });
 
   if (!site) {
     return NextResponse.json({ error: 'No repository connected.' }, { status: 400 });

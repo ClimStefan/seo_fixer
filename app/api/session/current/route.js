@@ -7,17 +7,17 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function GET() {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ session: null }, { status: 200 });
+const { userId } = await auth();
+if (!userId) return NextResponse.json({ session: null }, { status: 200 });
 
   const { data: session } = await supabase
     .from('seofix_sessions')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('status', 'open')
     .order('created_at', { ascending: false })
     .limit(1)

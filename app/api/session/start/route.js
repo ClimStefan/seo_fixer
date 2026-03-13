@@ -13,12 +13,12 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function POST(request) {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+const { userId } = await auth();
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const { domain } = await request.json();
   if (!domain) return NextResponse.json({ error: 'Missing domain.' }, { status: 400 });
@@ -27,7 +27,7 @@ export async function POST(request) {
   const { data: existing } = await supabase
     .from('seofix_sessions')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('domain', domain)
     .eq('status', 'open')
     .order('created_at', { ascending: false })
@@ -46,7 +46,7 @@ export async function POST(request) {
   const { data: session, error } = await supabase
     .from('seofix_sessions')
     .insert({
-      user_id: user.id,
+      user_id: userId,
       domain,
       branch_name: branchName,
       status: 'open',

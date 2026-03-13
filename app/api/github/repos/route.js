@@ -5,16 +5,22 @@
  * Used in the connect page repo selector dropdown.
  * Returns repos sorted by most recently updated.
  */
-
+import { auth } from '@clerk/nextjs/server';
+import { supabase } from '../../../../lib/supabase.js';
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
 
 export async function GET() {
-  const user = await getSession();
+const authObject = await auth();
+const userId = authObject.userId;
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+const { data: user } = await supabase
+  .from('seofix_users')
+  .select('github_token')
+  .eq('id', userId)
+  .single();
+
+if (!user?.github_token) return NextResponse.json({ error: 'No GitHub token found.' }, { status: 401 });
 
   try {
     // Fetch up to 100 repos — enough for most users

@@ -15,12 +15,12 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
 import { supabase } from '../../../../lib/supabase.js';
 
 export async function POST(request) {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+const { userId } = await auth();
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const { fixId } = await request.json();
   if (!fixId) return NextResponse.json({ error: 'Missing fixId.' }, { status: 400 });
@@ -32,7 +32,7 @@ export async function POST(request) {
     .eq('id', fixId)
     .single();
 
-  if (!fix || fix.seofix_sessions.user_id !== user.id) {
+  if (!fix || fix.seofix_sessions.user_id !== userId) {
     return NextResponse.json({ error: 'Fix not found.' }, { status: 404 });
   }
 

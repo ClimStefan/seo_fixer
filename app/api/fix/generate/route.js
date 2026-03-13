@@ -1,83 +1,66 @@
 /**
  * app/api/fix/generate/route.js
  *
- * The brain of the auto-fix system. Takes the current file content
- * and the issue details, sends both to Claude, and gets back the
- * fixed file — with ONLY the minimum change needed to fix the issue.
- *
- * Key design principle: Claude must make the smallest possible change.
- * We never want it rewriting the whole file or "improving" things
- * that weren't broken. The prompt is written very defensively to
- * enforce this.
- *
- * For semi-auto issues (H1, alt text, schema) Claude returns a fix
- * plus a plain-English explanation of what it changed and why,
- * so the user can make an informed decision in the diff viewer.
+ * Calls Claude to generate the minimum fix for a given SEO issue.
+ * Before calling Claude it checks the user's fix budget.
+ * After a successful fix it decrements the budget by 1.
  *
  * POST body:
- *   fileContent  — full source file as a string
- *   filePath     — e.g. "app/blog/page.js" (used for context)
- *   pageUrl      — the live URL (used for context)
- *   issue        — the full issue object from the audit engine
- *   pageHtml     — the rendered HTML of the page (for alt text / content context)
+ *   fileContent  — full source file
+ *   filePath     — e.g. "app/blog/page.js"
+ *   pageUrl      — the live URL
+ *   issue        — full issue object from audit engine
+ *   pageHtml     — optional live HTML for context
  */
 
 import { NextResponse } from 'next/server';
-import { getSession } from '../../../../lib/session.js';
+import { auth } from '@clerk/nextjs/server';
+import { checkFixBudget, decrementFixBudget } from '../../../../lib/fixBudget.js';
 
-// Issue types that Claude can fix fully automatically
-const FULLY_AUTO = [
-  'missing_title',
-  'title_too_long',
-  'title_too_short',
-  'missing_meta_description',
-  'meta_description_too_long',
-  'meta_description_too_short',
-  'missing_viewport',
-  'missing_html_lang',
-  'missing_og_tags',
-];
-
-// Issue types that need a fix + human review of the suggestion
 const SEMI_AUTO = [
-  'missing_h1',
-  'multiple_h1',
-  'h1_too_long',
-  'missing_alt_text',
-  'missing_schema',
+  'missing_h1', 'multiple_h1', 'h1_too_long',
+  'missing_alt_text', 'missing_schema',
 ];
 
-// Issue types where we give guidance only
-const GUIDANCE_ONLY = [
-  'thin_content',
-  'noindex_set',
-];
+const GUIDANCE_ONLY = ['thin_content', 'noindex_set'];
 
 export async function POST(request) {
-  const user = await getSession();
-  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+const { userId } = await auth();
+if (!userId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   let body;
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 }); }
 
   const { fileContent, filePath, pageUrl, issue, pageHtml } = body;
-
   if (!fileContent || !issue) {
     return NextResponse.json({ error: 'Missing fileContent or issue.' }, { status: 400 });
   }
 
-  // Guidance-only issues — no Claude call needed, return static guidance
+  // Guidance-only — no Claude call, no budget consumed
   if (GUIDANCE_ONLY.includes(issue.type)) {
+    return NextResponse.json({ mode: 'guidance', guidance: getGuidance(issue) });
+  }
+
+  // ── Check fix budget before calling Claude ──
+  const budget = await checkFixBudget(userId);
+
+  if (budget.noPlan) {
     return NextResponse.json({
-      mode: 'guidance',
-      guidance: getGuidance(issue),
-    });
+      error: 'no_plan',
+      message: 'You need an active plan to use auto-fix. Start with the one-time audit for $19.',
+    }, { status: 403 });
+  }
+
+  if (!budget.allowed) {
+    return NextResponse.json({
+      error: 'budget_exhausted',
+      message: 'You have used all 100 fixes included in your one-time audit. Upgrade to the monthly plan for unlimited fixes.',
+      remaining: 0,
+    }, { status: 403 });
   }
 
   const isSemiAuto = SEMI_AUTO.includes(issue.type);
-
-  // Build the prompt based on the issue type
   const prompt = buildPrompt({ fileContent, filePath, pageUrl, issue, pageHtml, isSemiAuto });
 
   try {
@@ -102,18 +85,23 @@ export async function POST(request) {
 
     const data = await response.json();
     const raw = data.content?.[0]?.text || '';
-
-    // Parse Claude's response — it returns JSON with fixedContent + explanation
     const parsed = parseClaudeResponse(raw);
+
     if (!parsed) {
       return NextResponse.json({ error: 'Could not parse Claude response. Please try again.' }, { status: 500 });
     }
+
+    // ── Decrement budget AFTER successful generation ──
+    const newRemaining = await decrementFixBudget(budget.purchase.id);
 
     return NextResponse.json({
       mode: isSemiAuto ? 'semi-auto' : 'auto',
       fixedContent: parsed.fixedContent,
       explanation: parsed.explanation,
       changesSummary: parsed.changesSummary,
+      // Return remaining so UI can update the counter
+      remaining: newRemaining,
+      isUnlimited: budget.purchase.type === 'monthly',
     });
 
   } catch (err) {
@@ -121,15 +109,8 @@ export async function POST(request) {
   }
 }
 
-// ─────────────────────────────────────────
-// PROMPT BUILDER
-// ─────────────────────────────────────────
-
 function buildPrompt({ fileContent, filePath, pageUrl, issue, pageHtml, isSemiAuto }) {
-  // Trim HTML to avoid massive token usage — we only need the <head> and first 2000 chars of body
-  const trimmedHtml = pageHtml
-    ? pageHtml.slice(0, 4000)
-    : '';
+  const trimmedHtml = pageHtml ? pageHtml.slice(0, 4000) : '';
 
   const issueContext = `
 Issue type: ${issue.type}
@@ -143,18 +124,9 @@ Recommendation: ${issue.recommendation}
 RULES — follow these exactly:
 1. Return ONLY valid JSON, nothing else. No markdown, no backticks, no explanation outside the JSON.
 2. Make the MINIMUM change needed to fix the issue. Do not refactor, reformat, or improve anything else.
-3. Preserve all existing code exactly — indentation, quotes style, variable names, comments.
+3. Preserve all existing code exactly — indentation, quote style, variable names, comments.
 4. The fixedContent must be the COMPLETE file — not a diff, not a snippet, the whole file.
-5. If you cannot confidently fix the issue without breaking the code, return the original fileContent unchanged and explain why in the explanation field.
-`.trim();
-
-  const jsonSchema = `
-Return this exact JSON structure:
-{
-  "fixedContent": "<the complete fixed file as a string>",
-  "explanation": "<1-2 sentences explaining what you changed and why>",
-  "changesSummary": "<very short summary e.g. 'Shortened title from 87 to 58 characters'>"
-}
+5. If you cannot confidently fix the issue without breaking the code, return the original fileContent unchanged and explain why.
 `.trim();
 
   return `You are an expert SEO engineer fixing a specific issue in a web application source file.
@@ -167,7 +139,7 @@ PAGE URL: ${pageUrl}
 SEO ISSUE TO FIX:
 ${issueContext}
 
-PAGE HTML (for context — do not modify this, it's read-only):
+PAGE HTML (read-only context):
 ${trimmedHtml}
 
 SOURCE FILE TO FIX:
@@ -175,21 +147,21 @@ SOURCE FILE TO FIX:
 ${fileContent}
 \`\`\`
 
-${isSemiAuto ? 'This is a semi-automatic fix. Make your best attempt but note in the explanation that the user should review the generated content carefully.' : ''}
+${isSemiAuto ? 'This is a semi-automatic fix. Make your best attempt but note in the explanation that the user should review carefully.' : ''}
 
-${jsonSchema}`;
+Return this exact JSON:
+{
+  "fixedContent": "<complete fixed file as a string>",
+  "explanation": "<1-2 sentences explaining what you changed and why>",
+  "changesSummary": "<very short e.g. 'Shortened title from 87 to 58 characters'>"
+}`;
 }
 
-// ─────────────────────────────────────────
-// RESPONSE PARSER
-// ─────────────────────────────────────────
-
 function parseClaudeResponse(raw) {
-  // Claude should return pure JSON but sometimes wraps in backticks
-  let cleaned = raw.trim();
-
-  // Strip markdown code fences if present
-  cleaned = cleaned.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+  let cleaned = raw.trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '');
 
   try {
     const parsed = JSON.parse(cleaned);
@@ -200,7 +172,6 @@ function parseClaudeResponse(raw) {
       changesSummary: parsed.changesSummary || 'Fix applied',
     };
   } catch {
-    // Try to extract JSON from within the text
     const match = cleaned.match(/\{[\s\S]*"fixedContent"[\s\S]*\}/);
     if (match) {
       try {
@@ -211,17 +182,11 @@ function parseClaudeResponse(raw) {
           explanation: parsed.explanation || '',
           changesSummary: parsed.changesSummary || 'Fix applied',
         };
-      } catch {
-        return null;
-      }
+      } catch { return null; }
     }
     return null;
   }
 }
-
-// ─────────────────────────────────────────
-// GUIDANCE TEXT FOR USER-ONLY ISSUES
-// ─────────────────────────────────────────
 
 function getGuidance(issue) {
   const guidance = {
@@ -229,7 +194,7 @@ function getGuidance(issue) {
       title: 'How to fix thin content',
       steps: [
         'Identify the main topic of this page and who it\'s for',
-        'Add a clear introduction that explains what the page covers',
+        'Add a clear introduction explaining what the page covers',
         'Include practical details: features, benefits, use cases, or how-to steps',
         'Add an FAQ section answering common questions about this topic',
         'Aim for at least 300 words of meaningful content — not padding',
@@ -240,11 +205,11 @@ function getGuidance(issue) {
       title: 'This page is blocked from search engines',
       steps: [
         'Check if this page should actually be indexed (landing pages, blog posts, product pages — yes)',
-        'If it should be indexed, find the robots meta tag in your file and remove the "noindex" value',
-        'If noindex is intentional (thank-you pages, admin pages, staging) — leave it as is',
+        'If it should be indexed, find the robots meta tag and remove the "noindex" value',
+        'If noindex is intentional (thank-you pages, admin pages) — leave it as is',
         'Common places to look: your layout file, _document.js, or the page\'s own <Head> component',
       ],
-      note: 'This requires your decision — we never remove noindex automatically because it may be intentional.',
+      note: 'We never remove noindex automatically because it may be intentional.',
     },
   };
 
