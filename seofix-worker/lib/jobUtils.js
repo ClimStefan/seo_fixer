@@ -6,7 +6,7 @@
  * polling endpoint up to date with live progress.
  */
 
-import { supabase } from '../lib/supabase';
+import { supabase } from './supabase';
 
 /**
  * Marks a job as running and records the start time.
