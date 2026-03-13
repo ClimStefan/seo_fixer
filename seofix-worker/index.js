@@ -14,10 +14,10 @@
  */
 
 import express from 'express';
-import { runFullCrawl } from './jobs/fullCrawl.js';
-import { runLinkCheck } from './jobs/linkCheck.js';
-import { runSitemapCheck } from './jobs/sitemapCheck.js';
-import { runPageSpeed } from './jobs/pageSpeed.js';
+import { runFullCrawl } from './app/jobs/fullCrawl.js';
+import { runLinkCheck } from './app/jobs/linkCheck.js';
+import { runSitemapCheck } from './app/jobs/sitemapCheck.js';
+import { runPageSpeed } from './app/jobs/pageSpeed.js';
 import { supabase } from './lib/supabase.js';
 
 const app = express();
