@@ -17,8 +17,8 @@
  */
 
 import fetch from 'node-fetch';
-import { supabase } from '../lib/supabase.js';
-import { startJob, updateProgress, completeJob, failJob } from '../lib/jobUtils.js';
+import { supabase } from '../../lib/supabase.js';
+import { startJob, updateProgress, completeJob, failJob } from '../../lib/jobUtils.js';
 
 // Free tier: 25,000 queries/day. Add PAGESPEED_API_KEY to env for higher limits.
 const PAGESPEED_API = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';

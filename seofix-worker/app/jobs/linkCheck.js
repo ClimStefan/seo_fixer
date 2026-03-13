@@ -18,8 +18,8 @@
  */
 
 import fetch from 'node-fetch';
-import { supabase } from '../lib/supabase.js';
-import { startJob, updateProgress, completeJob, failJob } from '../lib/jobUtils.js';
+import { supabase } from '../../lib/supabase.js';
+import { startJob, updateProgress, completeJob, failJob } from '../../lib/jobUtils.js';
 
 const REQUEST_TIMEOUT = 8000;  // 8 seconds per link
 const CONCURRENCY = 10;        // Link checks are just HEAD requests — can do more at once

@@ -11,8 +11,8 @@
  * 4. Update progress counter after each page so frontend can poll it
  */
 
-import { supabase } from '../lib/supabase.js';
-import { startJob, updateProgress, completeJob, failJob } from '../lib/jobUtils.js';
+import { supabase } from '../../lib/supabase.js';
+import { startJob, updateProgress, completeJob, failJob } from '../../lib/jobUtils.js';
 import { parse } from 'node-html-parser';
 import fetch from 'node-fetch';
 

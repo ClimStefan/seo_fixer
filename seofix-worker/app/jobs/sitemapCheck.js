@@ -12,8 +12,8 @@
 
 import fetch from 'node-fetch';
 import { parseStringPromise } from 'xml2js';
-import { supabase } from '../lib/supabase.js';
-import { startJob, completeJob, failJob } from '../lib/jobUtils.js';
+import { supabase } from '../../lib/supabase.js';
+import { startJob, completeJob, failJob } from '../../lib/jobUtils.js';
 
 /**
  * Tries to fetch a sitemap from common locations.
